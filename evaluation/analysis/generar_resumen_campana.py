@@ -7,11 +7,11 @@ from pathlib import Path
 from postprocesar_campana import procesar_run
 
 
-BASE = Path("/home/robcib/Desktop/MARIAM/resultados_tfg")
+SCRIPT_DIR = Path(__file__).resolve().parent
+EVALUATION_DIR = SCRIPT_DIR.parent
 
-DEFAULT_ROOT = BASE / "01_pruebas_oficiales"
-DEFAULT_MATRIX = BASE / "00_configuracion" / "matriz_pruebas.csv"
-DEFAULT_OUTPUT = BASE / "02_postprocesado" / "resumen_pruebas.csv"
+DEFAULT_MATRIX = EVALUATION_DIR / "config" / "matriz_pruebas_congelada.csv"
+DEFAULT_OUTPUT = Path("resumen_pruebas.csv")
 
 
 def cargar_matriz(path):
@@ -34,7 +34,7 @@ def main():
     parser.add_argument(
         "--root",
         type=Path,
-        default=DEFAULT_ROOT,
+        required=True,
         help="Carpeta raíz que contiene las ejecuciones.",
     )
 
