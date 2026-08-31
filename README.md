@@ -4,7 +4,7 @@ Locomotion, waypoint navigation, visual perception and risk-aware mobility for t
 
 This repository contains the main code, trained locomotion checkpoints, simulation scenarios, waypoint routes and post-processing tools used to develop and evaluate a navigation framework for the Unitree G1 humanoid robot.
 
-The framework combines reinforcement-learning-based locomotion with autonomous waypoint navigation, RGB-D perception, YOLO-based terrain detection and a spatial risk map used to modify the planned route.
+The framework combines reinforcement-learning-based locomotion with autonomous waypoint navigation, RGB-D perception, YOLO-based terrain detection and a spatial risk map used to adapt the planned route.
 
 ## Overview
 
@@ -23,6 +23,7 @@ Three mobility strategies are implemented:
 
 ## Repository structure
 
+```text
 unitree-g1-risk-aware-navigation/
 │
 ├── locomotion/
@@ -66,7 +67,7 @@ unitree-g1-risk-aware-navigation/
 │
 ├── .gitignore
 └── README.md
-
+```
 
 ## Locomotion
 
@@ -94,51 +95,49 @@ The checkpoints are intended to be loaded through the RSL-RL integration provide
 
 The main navigation implementation is:
 
+```text
 navigation/play_nave_mapa_semantico_informado.py
-
+```
 
 The script integrates the trained locomotion policy with autonomous waypoint navigation.
 
 Velocity commands are generated from the relative position and orientation of the robot with respect to the active waypoint. The navigation logic also monitors events related to obstacle proximity, lack of progress and robot stability.
 
-The navigation system includes the following states:
-
-NORMAL
-OBSTACULO
-STOPPED
-FALL_RISK
-BLOCKED
-
+The navigation system includes states associated with normal navigation, obstacle detection, temporary stops, fall-risk conditions and blocked situations.
 
 The script supports the three mobility modes through:
 
+```text
 --mobility-mode uninformed
 --mobility-mode semi_informed
 --mobility-mode informed
+```
 
+The main experiment-specific arguments include:
 
-The main experiment-specific arguments are:
-
+```text
 --scene
 --waypoints-file
 --test-id
 --output-dir
 --rep
+```
 
 Additional RSL-RL and Isaac Lab arguments are provided through the Unitree RL Lab execution environment.
 
-During each mission, the script records robot pose, waypoint progress, velocity commands, measured velocities, orientation, contact forces, navigation states and mission events in a CSV log.
+During each mission, the script records information including robot pose, waypoint progress, velocity commands, measured velocities, orientation, contact forces, navigation states and mission events.
 
-RGB and depth information are also recorded periodically for the risk-map pipeline.
+RGB and depth information are also periodically recorded for the perception and risk-map pipeline.
 
 ## Perception and risk map
 
 The perception system is located in:
 
+```text
 perception/
 ├── g1_inference.py
 └── g1_inference_online.py
-
+```
 
 ### `g1_inference.py`
 
@@ -148,14 +147,13 @@ For each valid detection, the system estimates its position relative to the robo
 
 The detections are projected onto a two-dimensional spatial grid to progressively build a semantic risk map.
 
-The module also stores information such as:
+The module stores information such as the detected class, confidence, estimated depth, spatial position, assigned risk and whether the detection lies inside the navigation region of interest.
 
-- detected class;
-- confidence;
-- estimated depth;
-- estimated spatial position;
-- assigned risk;
-- whether the detection lies inside the navigation region of interest.
+The YOLO model weights are provided externally through:
+
+```text
+--model /path/to/model.pt
+```
 
 ### `g1_inference_online.py`
 
@@ -163,7 +161,14 @@ This script implements the online processing loop used during a simulation missi
 
 It monitors the active mission directory, reads newly generated RGB-D frames and robot pose information, processes each frame through `g1_inference.py` and progressively updates the risk map.
 
-This allows the navigation process and the perception process to operate separately while exchanging information through the mission output files.
+This allows the navigation and perception processes to operate separately while exchanging information through the files generated during the mission.
+
+The online process is launched by explicitly providing the YOLO model:
+
+```bash
+python perception/g1_inference_online.py \
+    --model /path/to/model.pt
+```
 
 ## Risk-aware mobility
 
@@ -171,27 +176,27 @@ The generated risk map can be used to modify the original waypoint route.
 
 ### Uninformed mobility
 
-The original waypoint sequence is preserved throughout the mission. Perception information may be recorded, but it is not used to alter the navigation route.
+The original waypoint sequence is preserved throughout the mission. Perception information can be recorded, but it is not used to alter the navigation route.
 
 ### Semi-informed mobility
 
 Route modifications associated with previous navigation problems can be stored and reused in later executions.
 
-This provides a simple form of accumulated route knowledge without continuously replanning every waypoint from the current map.
+This provides a simple form of accumulated route knowledge without continuously replanning every waypoint from the current risk map.
 
 ### Informed mobility
 
 The risk map is periodically evaluated during navigation.
 
-If the local risk associated with a waypoint exceeds the defined criterion, alternative nearby positions are evaluated and the waypoint can be displaced toward a lower-risk region.
+If the local risk associated with a waypoint exceeds the defined adaptation criterion, alternative nearby positions are evaluated and the waypoint can be displaced towards a lower-risk region.
 
-The original and modified routes are stored separately so that the effect of the adaptation can subsequently be evaluated.
+The original and modified waypoint routes are stored separately so that the effect of the adaptation can subsequently be evaluated.
 
 ## Simulation scenarios
 
-The `scenarios/` directory contains the USD environments used in the experimental campaign.
+The `scenarios/` directory contains the final USD environments used during the experimental campaign.
 
-| Scenario | Use |
+| Scenario | Purpose |
 | --- | --- |
 | `nave_densidad_baja.usd` | Low obstacle-density environment |
 | `nave_densidad_media.usd` | Medium obstacle-density environment |
@@ -200,17 +205,18 @@ The `scenarios/` directory contains the USD environments used in the experimenta
 | `nave_densidad_alta_sin_friccion.usd` | Modified-friction scenario used to evaluate locomotion robustness |
 | `nave_simreal.usd` | Scenario used for the simulation/physical-robot qualitative comparison |
 
-Only the final scenario versions used in the experimental methodology are included.
+Only the final scenario versions relevant to the experimental methodology are included.
 
 ## Waypoint routes
 
-The predefined navigation routes are stored as CSV files in `waypoints/`.
+The predefined navigation routes are stored as CSV files in `waypoints/`:
 
+```text
 waypoints_densidad_risk.csv
 waypoints_equivalente_real.csv
 waypoints_normal.csv
 waypoints_zigzag.csv
-
+```
 
 Each file defines the planar coordinates of the waypoints used for a particular experiment.
 
@@ -220,17 +226,18 @@ During risk-aware navigation, additional copies of the original and current wayp
 
 The repository includes the post-processing tools used to obtain quantitative metrics from the simulation campaign.
 
+```text
 evaluation/
 ├── analysis/
 │   ├── generar_resumen_campana.py
 │   └── postprocesar_campana.py
 └── config/
     └── matriz_pruebas_congelada.csv
-
+```
 
 ### `postprocesar_campana.py`
 
-Processes an individual experimental run and calculates metrics related to:
+This script processes an individual experimental run and calculates metrics related to:
 
 - mission completion and termination condition;
 - waypoint progress;
@@ -252,24 +259,38 @@ The processed results are stored in CSV files for subsequent analysis.
 
 ### `generar_resumen_campana.py`
 
-Processes the complete set of experimental executions and generates a consolidated summary.
+This script processes the complete set of experimental executions and generates a consolidated summary.
 
-The experimental matrix:
+The root directory containing the experimental runs is supplied through:
 
+```text
+--root /path/to/experimental/runs
+```
+
+For example:
+
+```bash
+python evaluation/analysis/generar_resumen_campana.py \
+    --root /path/to/experimental/runs
+```
+
+By default, the experimental configuration matrix is loaded directly from:
+
+```text
 evaluation/config/matriz_pruebas_congelada.csv
+```
 
-
-contains the configuration and classification of the different runs used in the campaign.
+An alternative matrix or output path can also be provided through the corresponding command-line arguments.
 
 ## Experimental campaign
 
-The included resources were used to evaluate the system under several conditions:
+The included resources were used to evaluate the framework under several conditions:
 
 1. Evolution of the reinforcement-learning locomotion policy.
 2. Navigation under different obstacle-density levels.
 3. Comparison between normal and zigzag waypoint routes.
 4. Locomotion under modified friction conditions.
-5. Comparison between uninformed, semi-informed and informed mobility.
+5. Comparison between uninformed, semi-informed and informed mobility strategies.
 6. Qualitative comparison between simulated manoeuvres and the physical Unitree G1 platform.
 
 The physical-robot experiments use the locomotion capabilities available on the robot and are intended as a qualitative comparison with equivalent simulated manoeuvres rather than as a direct deployment of the trained simulation policy.
@@ -290,6 +311,8 @@ The project was developed using:
 - Ultralytics YOLO
 - Pandas
 - Matplotlib
+
+A compatible NVIDIA GPU and CUDA environment are recommended for simulation, reinforcement-learning inference and visual perception.
 
 The simulation and reinforcement-learning components require a compatible Isaac Lab and Unitree RL Lab installation.
 
@@ -315,7 +338,7 @@ The navigation and locomotion scripts are intended to be integrated into a compa
 
 Experiment-specific resources such as simulation scenarios, waypoint routes and output directories can be provided through the corresponding command-line arguments.
 
-The YOLO model used by the perception pipeline is not included in the repository and must be supplied explicitly:
+The YOLO model used by the perception pipeline must be supplied explicitly:
 
 ```text
 --model /path/to/model.pt
@@ -327,7 +350,9 @@ The online perception process uses:
 outputs/datos_mapa_semantico/
 ```
 
-as the relative directory for exchanging mission information with the navigation process. The navigation and online perception processes should therefore be launched from the same working directory.
+as the relative directory for exchanging mission information with the navigation process.
+
+The navigation and online perception processes should therefore be launched from the same working directory.
 
 For campaign post-processing, the root directory containing the experimental runs is supplied through:
 
@@ -355,5 +380,4 @@ Parts of the project build upon external open-source software, particularly Isaa
 
 Files derived from third-party projects retain their corresponding copyright and license headers where applicable.
 
-The terms of the original projects should be reviewed before redistributing or reusing those components.
-
+The terms and licenses of the original projects should be reviewed before redistributing or reusing those components.
