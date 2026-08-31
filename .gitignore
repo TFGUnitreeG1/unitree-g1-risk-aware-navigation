@@ -216,3 +216,25 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project temporary files
+logs/
+outputs/
+videos/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+
+# IDE / editor
+.idea/
+.vscode/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Isaac / simulation temporary files
+.cache/
+cache/
