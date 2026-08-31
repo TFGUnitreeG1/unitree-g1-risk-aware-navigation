@@ -305,7 +305,7 @@ This repository does not include:
 - raw data from the full experimental campaign;
 - temporary or discarded development files.
 
-The YOLO weights must therefore be supplied separately and the corresponding model path must be configured before using the perception pipeline.
+The YOLO weights must therefore be supplied separately.
 
 ## Execution notes
 
@@ -313,22 +313,39 @@ This repository preserves the main files used during development and evaluation,
 
 The navigation and locomotion scripts are intended to be integrated into a compatible Unitree RL Lab / Isaac Lab workspace.
 
-Before execution, local paths to resources such as:
+Experiment-specific resources such as simulation scenarios, waypoint routes and output directories can be provided through the corresponding command-line arguments.
 
-YOLO weights
-USD scenarios
-waypoint files
-checkpoints
-experiment output directories
+The YOLO model used by the perception pipeline is not included in the repository and must be supplied explicitly:
 
+```text
+--model /path/to/model.pt
+```
 
-must be adapted to the target installation.
+The online perception process uses:
 
-For risk-aware experiments, the online perception process and the navigation simulation are executed as separate processes and communicate through the files generated for the active mission.
+```text
+outputs/datos_mapa_semantico/
+```
+
+as the relative directory for exchanging mission information with the navigation process. The navigation and online perception processes should therefore be launched from the same working directory.
+
+For campaign post-processing, the root directory containing the experimental runs is supplied through:
+
+```text
+--root /path/to/experimental/runs
+```
+
+while the default experimental matrix is obtained directly from:
+
+```text
+evaluation/config/matriz_pruebas_congelada.csv
+```
 
 ## Reproducibility
 
 The repository provides the main configuration, navigation, perception and evaluation files required to reconstruct the experimental methodology.
+
+Paths associated with external resources and experimental data are provided through command-line arguments or relative repository paths, avoiding dependencies on the original development machine.
 
 Exact reproduction additionally depends on the external simulator and reinforcement-learning environment, the trained YOLO weights and the software versions used during development.
 
